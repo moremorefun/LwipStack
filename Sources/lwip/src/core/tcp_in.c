@@ -315,58 +315,61 @@ tcp_input(struct pbuf *p, struct netif *inp)
     /* Finally, if we still did not get a match, we check all PCBs that
        are LISTENing for incoming connections. */
     prev = NULL;
-    for (lpcb = tcp_listen_pcbs.listen_pcbs; lpcb != NULL; lpcb = lpcb->next) {
-      /* check if PCB is bound to specific netif */
-      if ((lpcb->netif_idx != NETIF_NO_INDEX) &&
-          (lpcb->netif_idx != netif_get_index(ip_data.current_input_netif))) {
-        prev = (struct tcp_pcb *)lpcb;
-        continue;
-      }
-
-      if (lpcb->local_port == tcphdr->dest) {
-        if (IP_IS_ANY_TYPE_VAL(lpcb->local_ip)) {
-          /* found an ANY TYPE (IPv4/IPv6) match */
-#if SO_REUSE
-          lpcb_any = lpcb;
-          lpcb_prev = prev;
-#else /* SO_REUSE */
-          break;
-#endif /* SO_REUSE */
-        } else if (IP_ADDR_PCB_VERSION_MATCH_EXACT(lpcb, ip_current_dest_addr())) {
-          if (ip_addr_cmp(&lpcb->local_ip, ip_current_dest_addr())) {
-            /* found an exact match */
-            break;
-          } else if (ip_addr_isany(&lpcb->local_ip)) {
-            /* found an ANY-match */
-#if SO_REUSE
-            lpcb_any = lpcb;
-            lpcb_prev = prev;
-#else /* SO_REUSE */
-            break;
-#endif /* SO_REUSE */
-          }
-        }
-      }
-      prev = (struct tcp_pcb *)lpcb;
-    }
-#if SO_REUSE
-    /* first try specific local IP */
-    if (lpcb == NULL) {
-      /* only pass to ANY if no specific local IP has been found */
-      lpcb = lpcb_any;
-      prev = lpcb_prev;
-    }
-#endif /* SO_REUSE */
+    // --- LwipStack start ---
+    lpcb = tcp_listen_pcbs.listen_pcbs;
+    prev = (struct tcp_pcb *) lpcb;
+//    for (lpcb = tcp_listen_pcbs.listen_pcbs; lpcb != NULL; lpcb = lpcb->next) {
+//      /* check if PCB is bound to specific netif */
+//      if ((lpcb->netif_idx != NETIF_NO_INDEX) &&
+//          (lpcb->netif_idx != netif_get_index(ip_data.current_input_netif))) {
+//        prev = (struct tcp_pcb *)lpcb;
+//        continue;
+//      }
+//
+//      if (lpcb->local_port == tcphdr->dest) {
+//        if (IP_IS_ANY_TYPE_VAL(lpcb->local_ip)) {
+//          /* found an ANY TYPE (IPv4/IPv6) match */
+//#if SO_REUSE
+//          lpcb_any = lpcb;
+//          lpcb_prev = prev;
+//#else /* SO_REUSE */
+//          break;
+//#endif /* SO_REUSE */
+//        } else if (IP_ADDR_PCB_VERSION_MATCH_EXACT(lpcb, ip_current_dest_addr())) {
+//          if (ip_addr_cmp(&lpcb->local_ip, ip_current_dest_addr())) {
+//            /* found an exact match */
+//            break;
+//          } else if (ip_addr_isany(&lpcb->local_ip)) {
+//            /* found an ANY-match */
+//#if SO_REUSE
+//            lpcb_any = lpcb;
+//            lpcb_prev = prev;
+//#else /* SO_REUSE */
+//            break;
+//#endif /* SO_REUSE */
+//          }
+//        }
+//      }
+//      prev = (struct tcp_pcb *)lpcb;
+//    }
+//#if SO_REUSE
+//    /* first try specific local IP */
+//    if (lpcb == NULL) {
+//      /* only pass to ANY if no specific local IP has been found */
+//      lpcb = lpcb_any;
+//      prev = lpcb_prev;
+//    }
+//#endif /* SO_REUSE */
     if (lpcb != NULL) {
       /* Move this PCB to the front of the list so that subsequent
          lookups will be faster (we exploit locality in TCP segment
          arrivals). */
       if (prev != NULL) {
-        ((struct tcp_pcb_listen *)prev)->next = lpcb->next;
-        /* our successor is the remainder of the listening list */
-        lpcb->next = tcp_listen_pcbs.listen_pcbs;
-        /* put this listening pcb at the head of the listening list */
-        tcp_listen_pcbs.listen_pcbs = lpcb;
+//        ((struct tcp_pcb_listen *)prev)->next = lpcb->next;
+//        /* our successor is the remainder of the listening list */
+//        lpcb->next = tcp_listen_pcbs.listen_pcbs;
+//        /* put this listening pcb at the head of the listening list */
+//        tcp_listen_pcbs.listen_pcbs = lpcb;
       } else {
         TCP_STATS_INC(tcp.cachehit);
       }
@@ -382,6 +385,7 @@ tcp_input(struct pbuf *p, struct netif *inp)
       pbuf_free(p);
       return;
     }
+    // --- LwipStack end ---
   }
 
 #if TCP_INPUT_DEBUG
@@ -675,7 +679,10 @@ tcp_listen_input(struct tcp_pcb_listen *pcb)
     /* Set up the new PCB. */
     ip_addr_copy(npcb->local_ip, *ip_current_dest_addr());
     ip_addr_copy(npcb->remote_ip, *ip_current_src_addr());
-    npcb->local_port = pcb->local_port;
+    // --- LwipStack start ---
+    npcb->local_port = tcphdr->dest;
+//    npcb->local_port = pcb->local_port;
+    // --- LwipStack end ---
     npcb->remote_port = tcphdr->src;
     npcb->state = SYN_RCVD;
     npcb->rcv_nxt = seqno + 1;

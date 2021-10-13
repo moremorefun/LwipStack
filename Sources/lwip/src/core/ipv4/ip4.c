@@ -128,14 +128,17 @@ ip4_set_default_multicast_netif(struct netif *default_multicast_netif)
 struct netif *
 ip4_route_src(const ip4_addr_t *src, const ip4_addr_t *dest)
 {
-  if (src != NULL) {
-    /* when src==NULL, the hook is called from ip4_route(dest) */
-    struct netif *netif = LWIP_HOOK_IP4_ROUTE_SRC(src, dest);
-    if (netif != NULL) {
-      return netif;
-    }
-  }
-  return ip4_route(dest);
+  // --- LwipStack start ---
+  return netif_list;
+//  if (src != NULL) {
+//    /* when src==NULL, the hook is called from ip4_route(dest) */
+//    struct netif *netif = LWIP_HOOK_IP4_ROUTE_SRC(src, dest);
+//    if (netif != NULL) {
+//      return netif;
+//    }
+//  }
+//  return ip4_route(dest);
+  // --- LwipStack end ---
 }
 #endif /* LWIP_HOOK_IP4_ROUTE_SRC */
 
@@ -378,34 +381,36 @@ ip4_input_accept(struct netif *netif)
                          ip4_addr_get_u32(ip4_current_dest_addr()) & ip4_addr_get_u32(netif_ip4_netmask(netif)),
                          ip4_addr_get_u32(netif_ip4_addr(netif)) & ip4_addr_get_u32(netif_ip4_netmask(netif)),
                          ip4_addr_get_u32(ip4_current_dest_addr()) & ~ip4_addr_get_u32(netif_ip4_netmask(netif))));
-
-  /* interface is up and configured? */
-  if ((netif_is_up(netif)) && (!ip4_addr_isany_val(*netif_ip4_addr(netif)))) {
-    /* unicast to this interface address? */
-    if (ip4_addr_cmp(ip4_current_dest_addr(), netif_ip4_addr(netif)) ||
-        /* or broadcast on this interface network address? */
-        ip4_addr_isbroadcast(ip4_current_dest_addr(), netif)
-#if LWIP_NETIF_LOOPBACK && !LWIP_HAVE_LOOPIF
-        || (ip4_addr_get_u32(ip4_current_dest_addr()) == PP_HTONL(IPADDR_LOOPBACK))
-#endif /* LWIP_NETIF_LOOPBACK && !LWIP_HAVE_LOOPIF */
-       ) {
-      LWIP_DEBUGF(IP_DEBUG, ("ip4_input: packet accepted on interface %c%c\n",
-                             netif->name[0], netif->name[1]));
-      /* accept on this netif */
-      return 1;
-    }
-#if LWIP_AUTOIP
-    /* connections to link-local addresses must persist after changing
-        the netif's address (RFC3927 ch. 1.9) */
-    if (autoip_accept_packet(netif, ip4_current_dest_addr())) {
-      LWIP_DEBUGF(IP_DEBUG, ("ip4_input: LLA packet accepted on interface %c%c\n",
-                             netif->name[0], netif->name[1]));
-      /* accept on this netif */
-      return 1;
-    }
-#endif /* LWIP_AUTOIP */
-  }
-  return 0;
+  // --- LwipStack start ---
+  return 1;
+//  /* interface is up and configured? */
+//  if ((netif_is_up(netif)) && (!ip4_addr_isany_val(*netif_ip4_addr(netif)))) {
+//    /* unicast to this interface address? */
+//    if (ip4_addr_cmp(ip4_current_dest_addr(), netif_ip4_addr(netif)) ||
+//        /* or broadcast on this interface network address? */
+//        ip4_addr_isbroadcast(ip4_current_dest_addr(), netif)
+//#if LWIP_NETIF_LOOPBACK && !LWIP_HAVE_LOOPIF
+//        || (ip4_addr_get_u32(ip4_current_dest_addr()) == PP_HTONL(IPADDR_LOOPBACK))
+//#endif /* LWIP_NETIF_LOOPBACK && !LWIP_HAVE_LOOPIF */
+//       ) {
+//      LWIP_DEBUGF(IP_DEBUG, ("ip4_input: packet accepted on interface %c%c\n",
+//                             netif->name[0], netif->name[1]));
+//      /* accept on this netif */
+//      return 1;
+//    }
+//#if LWIP_AUTOIP
+//    /* connections to link-local addresses must persist after changing
+//        the netif's address (RFC3927 ch. 1.9) */
+//    if (autoip_accept_packet(netif, ip4_current_dest_addr())) {
+//      LWIP_DEBUGF(IP_DEBUG, ("ip4_input: LLA packet accepted on interface %c%c\n",
+//                             netif->name[0], netif->name[1]));
+//      /* accept on this netif */
+//      return 1;
+//    }
+//#endif /* LWIP_AUTOIP */
+//  }
+//  return 0;
+  // --- LwipStack end ---
 }
 
 /**
