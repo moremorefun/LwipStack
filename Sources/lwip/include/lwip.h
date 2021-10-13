@@ -8,6 +8,12 @@
 #import <Cocoa/Cocoa.h>
 #endif
 
+#import "lwip/init.h"
+#import "lwip/pbuf.h"
+#import "lwip/tcp.h"
+#import "lwip/timeouts.h"
+#import "compat.h"
+
 //! Project version number for lwip.
 FOUNDATION_EXPORT double lwipVersionNumber;
 
